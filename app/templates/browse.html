@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block title %}Browse {{ label }}{% endblock %}
+{% block content %}
+<h1>{{ label }}</h1>
+
+{% if current %}
+<p class="meta"><a href="/{{ route_base }}/{{ parent }}">&larr; Parent directory</a></p>
+{% endif %}
+
+{% if items %}
+<table>
+<tr><th>Name</th><th>Size</th></tr>
+{% for item in items %}
+<tr>
+  <td>
+    {% if item.is_dir %}
+    <span class="dir-icon">&#128193;</span>
+    <a href="/{{ route_base }}/{{ item.path }}">{{ item.name }}/</a>
+    {% else %}
+    <span class="dir-icon"></span>
+    {{ item.name }}
+    {% endif %}
+  </td>
+  <td class="meta">
+    {% if not item.is_dir %}
+      {% if item.size < 1024 %}
+        {{ item.size }} B
+      {% elif item.size < 1048576 %}
+        {{ '{:.1f}'.format(item.size / 1024) }} KB
+      {% else %}
+        {{ '{:.1f}'.format(item.size / 1048576) }} MB
+      {% endif %}
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>No files found.</p>
+{% endif %}
+<p class="meta">Path: {{ root_dir }}</p>
+{% endblock %}

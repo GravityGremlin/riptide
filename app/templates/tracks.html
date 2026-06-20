@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block title %}{{ album_title }}{% endblock %}
+{% block content %}
+<h1>{{ album_title }}</h1>
+<p class="meta">{{ artist_name }} &mdash; {{ tracks|length }} tracks &mdash; <span class="service-badge service-{{ service }}">{{ service }}</span></p>
+
+{# Primary action: Download entire album #}
+<form method="post" action="/download" style="margin-bottom:1em;">
+  <input type="hidden" name="url" value="{{ download_url }}">
+  <label><input type="checkbox" name="convert_opus" value="1"> Convert to Opus</label>
+  <button type="submit" class="btn" style="padding:.6em 1.2em; font-size:1.1em;">Download entire album (FLAC)</button>
+</form>
+
+{% if tracks %}
+<form method="post" action="/download">
+  <table>
+  <tr><th>#</th><th>Title</th><th>Artist</th><th>Select</th></tr>
+  {% for t in tracks %}
+  <tr>
+    <td>{{ t.num }}</td>
+    <td>{{ t.title }}</td>
+    <td>{{ t.artist }}</td>
+    <td><input type="checkbox" name="url" value="{{ t.url }}" checked></td>
+  </tr>
+  {% endfor %}
+  </table>
+
+  <div class="actions">
+    <label><input type="checkbox" name="convert_opus" value="1"> Convert to Opus</label>
+    <button type="submit">Download selected tracks</button>
+  </div>
+</form>
+{% else %}
+<p class="meta">Track listing not available. Download the full album above.</p>
+{% endif %}
+
+<p class="meta"><a href="/search?q={{ album_title }}">&larr; Back to search</a></p>
+{% endblock %}

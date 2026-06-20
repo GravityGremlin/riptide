@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}riptide{% endblock %}</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:1em;background:#111;color:#eee;line-height:1.5}
+a{color:#6af}
+a:visited{color:#a6f}
+h1{font-size:1.4em;margin:.5em 0}
+h2{font-size:1.2em;margin:.5em 0}
+nav{margin-bottom:1em;padding:.5em 0;border-bottom:1px solid #333}
+nav a{margin-right:1em}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:.4em .6em;border-bottom:1px solid #333}
+tr:hover{background:#1a1a2e}
+input,button,select{padding:.4em .6em;font-size:1em}
+button,.btn{display:inline-block;padding:.4em .8em;background:#256;color:#fff;border:1px solid #47b;border-radius:4px;cursor:pointer;text-decoration:none}
+button:hover,.btn:hover{background:#368}
+input[type=text]{background:#222;color:#eee;border:1px solid #444;border-radius:4px;width:60%}
+input[type=checkbox]{transform:scale(1.2);margin-right:.4em}
+.flash{padding:.5em 1em;background:#342;border:1px solid #683;border-radius:4px;margin:.5em 0}
+.status-queued{color:#888}
+.status-running{color:#fd0}
+.status-completed{color:#0a0}
+.status-error{color:#f44}
+.meta{color:#888;font-size:.9em}
+pre{background:#000;padding:.5em;overflow:auto;max-height:300px;font-size:.85em}
+.dir-icon{padding:0 .3em;font-weight:bold;color:#888}
+.service-badge{display:inline-block;padding:.1em .4em;border-radius:3px;font-size:.75em;font-weight:bold;margin-right:.3em}
+.service-tidal{background:#004;color:#0ff;border:1px solid #0ff}
+.service-qobuz{background:#003;color:#0bf;border:1px solid #0bf}
+.actions{margin:1em 0}
+footer{margin-top:2em;padding-top:.5em;border-top:1px solid #333;color:#666;font-size:.85em}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/">Search</a>
+  <a href="/jobs">Jobs</a>
+  <a href="/browse">Downloads</a>
+  <a href="/library">Library</a>
+  {% if not tidal_ok %}
+  <span style="color:#f44">[no Tidal login]</span>
+  {% endif %}
+</nav>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for msg in messages %}
+<div class="flash">{{ msg }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<footer>riptide &mdash; Tidal + Qobuz &bull; no JS required</footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block title %}Albums: {{ artist_name }}{% endblock %}
+{% block content %}
+<h1>{{ artist_name }}</h1>
+<p class="meta"><a href="/search?q={{ q }}">&larr; Back to search</a></p>
+
+{% if albums %}
+<div class="actions" style="margin-bottom:1em;">
+  <form method="post" action="/download" style="display:inline-block; margin-right:1em;">
+    {% for a in albums %}
+      <input type="hidden" name="url" value="{{ a.url }}">
+    {% endfor %}
+    <label><input type="checkbox" name="convert_opus" value="1"> Convert to Opus</label>
+    <button type="submit" class="btn">Download all albums ({{ albums|length }})</button>
+  </form>
+</div>
+
+<form method="post" action="/download">
+<table>
+<tr><th>Album</th><th>Year</th><th>Tracks</th><th>Service</th><th>Action</th></tr>
+{% for a in albums %}
+<tr>
+  <td><a href="/album/{{ a.id }}?service={{ a.service }}">{{ a.title }}</a></td>
+  <td>{{ a.year }}</td>
+  <td>{{ a.track_count }}</td>
+  <td><span class="service-badge service-{{ a.service }}">{{ a.service }}</span></td>
+  <td>
+    <a class="btn" href="/album/{{ a.id }}?service={{ a.service }}">View tracks</a>
+    <label style="margin-left:.5em"><input type="checkbox" name="url" value="{{ a.url }}"> Download</label>
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+<div class="actions">
+  <label><input type="checkbox" name="convert_opus" value="1"> Convert to Opus</label>
+  <button type="submit">Download selected</button>
+</div>
+</form>
+{% else %}
+<p>No albums found.</p>
+{% endif %}
+{% endblock %}

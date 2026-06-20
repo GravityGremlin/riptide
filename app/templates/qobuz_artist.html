@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}Qobuz Artist{% endblock %}
+{% block content %}
+<h1>Qobuz Artist</h1>
+<p class="meta">Artist ID: {{ artist_id }}</p>
+
+<form method="post" action="/download">
+  <input type="hidden" name="url" value="https://open.qobuz.com/artist/{{ artist_id }}">
+  <label><input type="checkbox" name="convert_opus" value="1"> Convert to Opus</label>
+  <button type="submit">Download discography</button>
+</form>
+
+<p class="meta">Qobuz discography downloads use streamrip against the artist URL.</p>
+<p><a href="/search?q={{ q }}">&larr; Back to search</a></p>
+{% endblock %}

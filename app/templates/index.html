@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block title %}riptide - Search{% endblock %}
+{% block content %}
+<h1>riptide</h1>
+<p>Search Tidal and Qobuz for artists, albums, or tracks.</p>
+<form method="get" action="/search">
+  <input type="text" name="q" placeholder="Artist, album or track..." required autofocus size="40">
+  <button type="submit">Search</button>
+</form>
+<p class="meta">No JS needed -- works with curl and dillo.</p>
+{% endblock %}

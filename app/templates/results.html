@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+{% block title %}Search: {{ q }}{% endblock %}
+{% block content %}
+<h1>Search results: "{{ q }}"</h1>
+<form method="get" action="/search" style="margin-bottom:1em">
+  <input type="text" name="q" value="{{ q }}" size="30">
+  <button type="submit">Search again</button>
+</form>
+
+{% set tidal_artists = results.artists | selectattr('service', 'equalto', 'tidal') | list %}
+{% set qobuz_artists = results.artists | selectattr('service', 'equalto', 'qobuz') | list %}
+{% set tidal_albums = results.albums | selectattr('service', 'equalto', 'tidal') | list %}
+{% set qobuz_albums = results.albums | selectattr('service', 'equalto', 'qobuz') | list %}
+{% set tidal_tracks = results.tracks | selectattr('service', 'equalto', 'tidal') | list %}
+{% set qobuz_tracks = results.tracks | selectattr('service', 'equalto', 'qobuz') | list %}
+
+{% macro album_table(title, albums) %}
+{% if albums %}
+<h2>{{ title }}</h2>
+<table>
+<tr><th>Album</th><th>Artist</th><th>Year</th><th>Tracks</th><th>Service</th><th>Download</th></tr>
+{% for a in albums %}
+<tr>
+  <td><a href="/album/{{ a.id }}?service={{ a.service }}">{{ a.title }}</a></td>
+  <td>{{ a.artist }}</td>
+  <td>{{ a.year }}</td>
+  <td>{{ a.track_count }}</td>
+  <td><span class="service-badge service-{{ a.service }}">{{ a.service }}</span></td>
+  <td>
+    <form method="post" action="/download" style="display:inline">
+      <input type="hidden" name="url" value="{{ a.url }}">
+      <button type="submit" class="btn">Download album</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+{% endmacro %}
+
+{% macro artist_list(title, artists) %}
+{% if artists %}
+<h2>{{ title }}</h2>
+<ul>
+{% for a in artists %}
+  <li>
+    <a href="/artist/{{ a.id }}?service={{ a.service }}&q={{ q }}">{{ a.title }}</a>
+    <span class="service-badge service-{{ a.service }}">{{ a.service }}</span>
+    <span class="meta">(artist)</span>
+  </li>
+{% endfor %}
+</ul>
+{% endif %}
+{% endmacro %}
+
+{% macro track_table(title, tracks) %}
+{% if tracks %}
+<h2>{{ title }}</h2>
+<table>
+<tr><th>Title</th><th>Artist</th><th>Album</th><th>Service</th><th></th></tr>
+{% for t in tracks %}
+<tr>
+  <td>{{ t.title }}</td>
+  <td>{{ t.artist }}</td>
+  <td>{{ t.album }}</td>
+  <td><span class="service-badge service-{{ t.service }}">{{ t.service }}</span></td>
+  <td>
+    <form method="post" action="/download" style="display:inline">
+      <input type="hidden" name="url" value="{{ t.url }}">
+      <button type="submit">Download</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+{% endmacro %}
+
+{# Prioritize Albums - primary use case #}
+{{ album_table('Qobuz Albums', qobuz_albums) }}
+{{ album_table('Tidal Albums', tidal_albums) }}
+
+{# Bulk download all albums per service #}
+{% if qobuz_albums or tidal_albums %}
+<div class="actions">
+  {% if qobuz_albums %}
+  <form method="post" action="/download" style="display:inline-block; margin-right:1em;">
+    <input type="hidden" name="service" value="qobuz">
+    {% for a in qobuz_albums %}
+      <input type="hidden" name="url" value="{{ a.url }}">
+    {% endfor %}
+    <label><input type="checkbox" name="convert_opus" value="1"> Convert to Opus</label>
+    <button type="submit" class="btn">Download all Qobuz albums ({{ qobuz_albums|length }})</button>
+  </form>
+  {% endif %}
+  {% if tidal_albums %}
+  <form method="post" action="/download" style="display:inline-block;">
+    <input type="hidden" name="service" value="tidal">
+    {% for a in tidal_albums %}
+      <input type="hidden" name="url" value="{{ a.url }}">
+    {% endfor %}
+    <label><input type="checkbox" name="convert_opus" value="1"> Convert to Opus</label>
+    <button type="submit" class="btn">Download all Tidal albums ({{ tidal_albums|length }})</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{{ artist_list('Qobuz Artists', qobuz_artists) }}
+{{ artist_list('Tidal Artists', tidal_artists) }}
+
+{{ track_table('Qobuz Tracks', qobuz_tracks) }}
+{{ track_table('Tidal Tracks', tidal_tracks) }}
+
+{% if not results.artists and not results.albums and not results.tracks %}
+<p class="error">No results found for "{{ q }}".</p>
+{% endif %}
+
+<p><a href="/">&larr; Back to search</a></p>
+{% endblock %}

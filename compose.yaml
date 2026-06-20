@@ -1,0 +1,28 @@
+name: riptide
+
+services:
+  riptide:
+    build: .
+    container_name: riptide
+    restart: unless-stopped
+    ports:
+      - "19287:19287"
+    volumes:
+      # Downloads (browseable in web UI)
+      - ./downloads:/app/downloads
+      # Tidal auth token (from tidal-dl-ng login)
+      - ./config/tidal:/app/.config/tidal_dl_ng
+      # Streamrip config (Qobuz credentials)
+      - ./config/streamrip:/app/.config/streamrip
+      # Beets config
+      - ./config/beets:/app/.config/beets
+      # Beets library target
+      - ./library:/app/library
+      # Job state persistence
+      - ./data:/app/data
+    environment:
+      - DOWNLOAD_DIR=/app/downloads
+      - LIBRARY_DIR=/app/library
+      - TIDAL_CONFIG_DIR=/app/.config/tidal_dl_ng
+      - STREAMRIP_CONFIG_DIR=/app/.config/streamrip
+      - FLASK_PORT=19287

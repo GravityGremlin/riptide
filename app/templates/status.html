@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block title %}Job: {{ job.id }}{% endblock %}
+{% block content %}
+<h1>Download Job: {{ job.id }}</h1>
+
+<table>
+<tr><th>URL</th><td style="word-break:break-all">{{ job.url }}</td></tr>
+<tr><th>Service</th><td><span class="service-badge service-{{ job.service }}">{{ job.service }}</span></td></tr>
+<tr><th>Status</th>
+  <td class="status-{{ job.status }}"><strong>{{ {'queued': 'Queued', 'running': 'Downloading', 'processing': 'Processing', 'completed': 'Import Complete', 'error': 'Error'}.get(job.status, job.status) }}</strong></td>
+</tr>
+<tr><th>Progress</th><td>{{ job.progress or 'Waiting...' }}</td></tr>
+<tr><th>Tracks</th><td>{{ job.tracks_done }} / {{ job.tracks_total }}</td></tr>
+<tr><th>Created</th><td class="meta">{{ job.created_at }}</td></tr>
+{% if job.started_at %}<tr><th>Started</th><td class="meta">{{ job.started_at }}</td></tr>{% endif %}
+{% if job.finished_at %}<tr><th>Finished</th><td class="meta">{{ job.finished_at }}</td></tr>{% endif %}
+</table>
+
+{% if job.status == 'completed' %}
+<p class="success" style="color:#0a0">Import Complete.</p>
+<p><a href="/browse">Browse downloads &rarr;</a></p>
+{% elif job.status == 'error' %}
+<p class="error" style="color:#f44">Download failed.</p>
+{% elif job.status in ('queued', 'running', 'processing') %}
+  {% if job.status in ('running', 'processing') %}
+  <p>Auto-refreshing every 5 seconds.</p>
+  <meta http-equiv="refresh" content="5">
+  {% endif %}
+  <form method="get" action="/status/{{ job.id }}">
+    <button type="submit">Refresh</button>
+  </form>
+{% endif %}
+
+{% if job.log %}
+<h2>Output log</h2>
+<pre>{% for line in job.log %}{{ line }}
+{% endfor %}</pre>
+{% endif %}
+
+<p><a href="/jobs">&larr; All jobs</a></p>
+{% endblock %}

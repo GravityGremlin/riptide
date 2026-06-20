@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+
+# Credentials / local state
+config/tidal/
+config/streamrip/
+data/
+downloads/
+library/
+
+# Vendored local package blob
+tidal_dl_ng.tar.gz

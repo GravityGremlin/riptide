@@ -1,0 +1,8 @@
+directory: /app/library
+import:
+  copy: no
+  move: yes
+  autotag: yes
+  timid: no
+  quiet_fallback: asis
+plugins: []

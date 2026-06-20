@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """riptide - multi-service TIDAL + Qobuz download web UI (no JS)."""
 
+__version__ = "0.2.0"
+
 import json
 import os
 import re
@@ -113,6 +115,7 @@ def _inject_globals():
     return {
         "tidal_ok": get_tidal_session() is not None,
         "download_dir": str(DOWNLOAD_DIR),
+        "version": __version__,
     }
 
 

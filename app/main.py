@@ -435,80 +435,81 @@ def jobs_list():
 
 def _browse_directory(root: Path, subpath: str, label: str, route_base: str):
     import os
-    # Use string paths (pathlib drops spaces on NFS)
+    import mimetypes
+    from flask import Response
+    
     root_str = str(root)
     target_str = os.path.join(root_str, subpath) if subpath else root_str
     
-    # Security check
+    # Security: check resolved path stays within root
     if not os.path.realpath(target_str).startswith(os.path.realpath(root_str)):
         return render_template("message.html", title="Forbidden", message="Path outside allowed directory.")
     
-    if not os.path.exists(target_str):
-        return render_template("message.html", title="Not Found", message="Path not found.")
+    # NFS attribute caching: os.path.exists/isfile unreliable
+    # Strategy: try listdir (directory), then open (file), then 404
     
-    # NFS attribute caching: os.path.exists/isfile may fail even when file exists
-    # Try to open directly
-    try:
-        if target_str.endswith("library.db"):
-            return render_template("message.html", title="Forbidden", message="Permission denied.")
-        from flask import Response
-        import mimetypes
-        def generate():
-            with open(target_str, "rb") as f:
-                while True:
-                    chunk = f.read(8192)
-                    if not chunk:
-                        break
-                    yield chunk
-        mime = mimetypes.guess_type(target_str)[0] or "application/octet-stream"
-        return Response(generate(), mimetype=mime)
-    except (FileNotFoundError, IsADirectoryError):
-        pass
-
-    items = []
+    # 1. Try as directory
     try:
         entries = os.listdir(target_str)
+    except (NotADirectoryError, FileNotFoundError):
+        entries = None
     except PermissionError:
         return render_template("message.html", title="Forbidden", message="Permission denied.")
-        
-    for name in entries:
-        if name == "library.db":
-            continue
-            
-        full_path = os.path.join(target_str, name)
-        is_dir = os.path.isdir(full_path)
-        
-        cover_url = ""
-        if is_dir:
-            cover_path = os.path.join(full_path, "cover.jpg")
-            if os.path.exists(cover_path):
-                cover_url = f"/{route_base}/{os.path.relpath(full_path, root_str)}/cover.jpg"
-                
-        items.append({
-            "name": name,
-            "is_dir": is_dir,
-            "path": os.path.relpath(full_path, root_str) if full_path != root_str else "",
-            "size": os.path.getsize(full_path) if not is_dir else 0,
-            "cover": cover_url
-        })
     
-    items.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
-    
-    parent = ""
-    if subpath:
-        parent = os.path.dirname(subpath)
-        if parent == ".":
-            parent = ""
+    if entries is not None:
+        items = []
+        for name in entries:
+            if name == "library.db":
+                continue
+            full_path = os.path.join(target_str, name)
+            is_dir = os.path.isdir(full_path)
             
-    return render_template(
-        "browse.html",
-        items=items,
-        current=subpath,
-        parent=parent,
-        label=label,
-        route_base=route_base,
-        root_dir=root_str
-    )
+            cover_url = ""
+            if is_dir:
+                cover_path = os.path.join(full_path, "cover.jpg")
+                if os.path.exists(cover_path):
+                    cover_url = f"/{route_base}/{os.path.relpath(full_path, root_str)}/cover.jpg"
+            
+            items.append({
+                "name": name,
+                "is_dir": is_dir,
+                "path": os.path.relpath(full_path, root_str) if full_path != root_str else "",
+                "size": os.path.getsize(full_path) if not is_dir else 0,
+                "cover": cover_url
+            })
+        
+        items.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
+        
+        parent = ""
+        if subpath:
+            parent = os.path.dirname(subpath)
+            if parent == ".":
+                parent = ""
+        
+        return render_template(
+            "browse.html", items=items, current=subpath, parent=parent,
+            label=label, route_base=route_base, root_dir=root_str
+        )
+    
+    # 2. Try as file (NFS: open works even when exists() returns False)
+    if target_str.endswith("library.db"):
+        return render_template("message.html", title="Forbidden", message="Permission denied.")
+    
+    try:
+        fh = open(target_str, "rb")
+    except (FileNotFoundError, IsADirectoryError):
+        return render_template("message.html", title="Not Found", message="Path not found.")
+    
+    def generate():
+        with fh:
+            while True:
+                chunk = fh.read(8192)
+                if not chunk:
+                    break
+                yield chunk
+    
+    mime = mimetypes.guess_type(target_str)[0] or "application/octet-stream"
+    return Response(generate(), mimetype=mime)
 
 
 @app.route("/browse")

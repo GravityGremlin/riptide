@@ -76,4 +76,4 @@ replaygain:
     targetlevel: 89
     r128: [Opus]
     r128_targetlevel: 84
-    peak: true
+    peak: max

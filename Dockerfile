@@ -3,6 +3,7 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     beets \
+    python3-requests python3-pil python3-pylast \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /tmp/

@@ -120,11 +120,20 @@ def _inject_globals():
 
 
 # ── Qobuz Search (via streamrip CLI) ───────────────────────────
-def _job_convert_opus(new_paths: list[Path]) -> list[Path]:
+def _job_convert_opus(new_paths: list[Path], job_id: str = None) -> list[Path]:
+    def update_prog(msg):
+        if not job_id: return
+        with _jobs_lock:
+            j = jobs.get(job_id)
+            if j: j["progress"] = msg
+            _save_jobs()
+
     converted = []
-    for src in new_paths:
-        if src.suffix.lower() not in {".flac", ".m4a", ".mp3", ".alac", ".wav", ".aiff", ".aif", ".aac"}:
-            continue
+    targets = [p for p in new_paths if p.suffix.lower() in {".flac", ".m4a", ".mp3", ".alac", ".wav", ".aiff", ".aif", ".aac"}]
+    total = len(targets)
+    
+    for i, src in enumerate(targets, 1):
+        update_prog(f"Converting Opus: {i}/{total} ({src.name})")
         dst = src.with_suffix(".opus")
         tmp_dst = src.with_name(src.name + ".tmp.opus")
         proc = subprocess.run([
@@ -425,24 +434,72 @@ def jobs_list():
 
 
 def _browse_directory(root: Path, subpath: str, label: str, route_base: str):
-    target = (root / subpath).resolve()
-    if not str(target).startswith(str(root.resolve())):
+    import os
+    # Use string paths (pathlib drops spaces on NFS)
+    root_str = str(root)
+    target_str = os.path.join(root_str, subpath) if subpath else root_str
+    
+    # Security check
+    if not os.path.realpath(target_str).startswith(os.path.realpath(root_str)):
         return render_template("message.html", title="Forbidden", message="Path outside allowed directory.")
-    if not target.exists():
+    
+    if not os.path.exists(target_str):
         return render_template("message.html", title="Not Found", message="Path not found.")
+    
+    # NFS attribute caching: os.path.exists/isfile may fail even when file exists
+    # Try to open directly
+    try:
+        if target_str.endswith("library.db"):
+            return render_template("message.html", title="Forbidden", message="Permission denied.")
+        from flask import Response
+        import mimetypes
+        def generate():
+            with open(target_str, "rb") as f:
+                while True:
+                    chunk = f.read(8192)
+                    if not chunk:
+                        break
+                    yield chunk
+        mime = mimetypes.guess_type(target_str)[0] or "application/octet-stream"
+        return Response(generate(), mimetype=mime)
+    except (FileNotFoundError, IsADirectoryError):
+        pass
 
     items = []
-    for entry in sorted(target.iterdir(), key=lambda e: (not e.is_dir(), e.name.lower())):
+    try:
+        entries = os.listdir(target_str)
+    except PermissionError:
+        return render_template("message.html", title="Forbidden", message="Permission denied.")
+        
+    for name in entries:
+        if name == "library.db":
+            continue
+            
+        full_path = os.path.join(target_str, name)
+        is_dir = os.path.isdir(full_path)
+        
+        cover_url = ""
+        if is_dir:
+            cover_path = os.path.join(full_path, "cover.jpg")
+            if os.path.exists(cover_path):
+                cover_url = f"/{route_base}/{os.path.relpath(full_path, root_str)}/cover.jpg"
+                
         items.append({
-            "name": entry.name,
-            "path": str(entry.relative_to(root)) if entry != root else "",
-            "is_dir": entry.is_dir(),
-            "size": entry.stat().st_size if entry.is_file() else 0,
+            "name": name,
+            "is_dir": is_dir,
+            "path": os.path.relpath(full_path, root_str) if full_path != root_str else "",
+            "size": os.path.getsize(full_path) if not is_dir else 0,
+            "cover": cover_url
         })
+    
+    items.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
+    
     parent = ""
     if subpath:
-        p = Path(subpath).parent
-        parent = str(p) if str(p) != "." else ""
+        parent = os.path.dirname(subpath)
+        if parent == ".":
+            parent = ""
+            
     return render_template(
         "browse.html",
         items=items,
@@ -450,7 +507,7 @@ def _browse_directory(root: Path, subpath: str, label: str, route_base: str):
         parent=parent,
         label=label,
         route_base=route_base,
-        root_dir=str(root),
+        root_dir=root_str
     )
 
 
@@ -492,31 +549,53 @@ def _run_download(job_id: str):
     before_files = {p.resolve() for p in DOWNLOAD_DIR.rglob("*") if p.is_file()}
     before_dirs = {p.resolve() for p in DOWNLOAD_DIR.rglob("*") if p.is_dir()}
     cmd_str = job["command"]
+    import re
+    progress_re = re.compile(r"(\d+)%")
+
     try:
         proc = subprocess.Popen(
             cmd_str, shell=True,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, env=env,
+            text=True, env=env, bufsize=1
         )
 
         lines = []
         assert proc.stdout
-        for raw_line in proc.stdout:
-            line = raw_line.rstrip("\n")
-            lines.append(line)
 
-            if "Downloading:" in line:
-                parts = line.split("Downloading:", 1)
-                label = parts[1].strip()[:60] if len(parts) > 1 else ""
-                _update(progress=f"Downloading: {label}")
-                _update(tracks_done=job.get("tracks_done", 0) + 1)
-            elif "%" in line and any(c.isdigit() for c in line[:5]):
-                m = re.search(r"(\d+\.?\d*)%", line)
-                if m:
-                    _update(progress=f"{m.group(1)}%")
-            m = _PROGRESS_RE.search(line)
-            if m:
-                _update(progress=f"Track {m.group(1)} / {m.group(2)}")
+        buffer = ""
+        while True:
+            char = proc.stdout.read(1)
+            if not char:
+                break
+            if char in ('\r', '\n'):
+                if buffer:
+                    line = buffer.strip()
+                    lines.append(line)
+                    if len(lines) > 50:
+                        lines.pop(0)
+
+                    m = progress_re.search(line)
+                    if m:
+                        pct = m.group(1)
+                        if "Item" in line:
+                            label = line.split("Item", 1)[1].split("\u2501")[0].strip(" '")
+                            _update(progress=f"DL: {label[:20]}... {pct}%")
+                        elif "List" in line:
+                            label = line.split("List", 1)[1].split("\u2501")[0].strip(" '")
+                            _update(progress=f"DL Album: {label[:20]}... {pct}%")
+                        elif "Downloading" in line:
+                            label = line.split("Downloading", 1)[1].split()[0]
+                            _update(progress=f"DL: {label[:20]}... {pct}%")
+                        else:
+                            _update(progress=f"Downloading... {pct}%")
+                    else:
+                        if "Downloading" in line and "%" not in line:
+                            parts = line.split("Downloading", 1)
+                            if len(parts) > 1:
+                                _update(progress=f"DL: {parts[1].strip()[:30]}")
+                buffer = ""
+            else:
+                buffer += char
 
         proc.wait()
         rc = proc.returncode
@@ -533,9 +612,10 @@ def _run_download(job_id: str):
         _update(status="processing", progress="Processing downloads")
 
         if new_files:
-            _job_convert_opus(new_files)
+            _job_convert_opus(new_files, job_id)
 
         if roots:
+            _update(progress="Importing into Beets library")
             _job_run_beets(roots)
 
         _update(status="completed", finished_at=_now_iso(), log=lines[-20:])

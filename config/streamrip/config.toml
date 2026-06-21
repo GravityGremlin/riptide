@@ -88,13 +88,13 @@ video_downloads_folder = "/home/shark/StreamripDownloads/YouTubeVideos"
 [database]
 # Create a database that contains all the track IDs downloaded so far
 # Any time a track logged in the database is requested, it is skipped
-# This can be disabled temporarily with the --no-db flag
-downloads_enabled = true
-# Path to the downloads database 
+downloads_enabled = false
+# Path to the downloads database
 downloads_path = "/app/.config/streamrip/downloads.db"
+
 # If a download fails, the item ID is stored here. Then, `rip repair` can be
 # called to retry the downloads
-failed_downloads_enabled = true
+failed_downloads_enabled = false
 failed_downloads_path = "/app/.config/streamrip/failed_downloads.db"
 
 # Convert tracks to a codec after downloading them.

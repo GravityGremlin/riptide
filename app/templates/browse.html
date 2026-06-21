@@ -19,7 +19,15 @@
   {% for item in dirs %}
     <div class="card" style="aspect-ratio: 1;">
       <a href="/{{ route_base }}/{{ item.path }}" style="display: flex; flex-direction: column; height: 100%;">
-        <div class="card-empty-img" style="background: rgba(92, 124, 250, 0.1); color: var(--accent); flex-grow: 1;">📁</div>
+        {% if item.cover %}
+          <div class="card-img-wrap" style="flex-grow: 1;">
+            <img src="{{ item.cover }}" alt="Cover" loading="lazy">
+          </div>
+        {% else %}
+          <div class="card-empty-img" style="background: rgba(92, 124, 250, 0.1); color: var(--accent); flex-grow: 1;">
+            {{ "💿" if current else "👤" }}
+          </div>
+        {% endif %}
         <div style="padding: 0.8em; background: var(--bg-card); text-align: center; border-top: 1px solid var(--border);">
           <div class="card-title">{{ item.name }}</div>
         </div>
@@ -33,12 +41,13 @@
   {% set files = items | rejectattr('is_dir') | list %}
   {% if files %}
   <table style="margin-top: 2.5em;">
-    <tr><th>Track</th><th style="text-align: right;">Size</th></tr>
+    <tr><th>Track</th><th style="text-align: right;">Size</th><th>Play</th></tr>
     {% for item in files %}
+    {% if not item.name.lower().endswith('.jpg') and not item.name.lower().endswith('.png') %}
     <tr>
       <td>
         <span style="color: var(--fg-dim); margin-right: 0.5em;">♪</span>
-        <a href="/{{ route_base }}/{{ item.path }}">{{ item.name }}</a>
+        <a href="/{{ route_base }}/{{ item.path }}" target="_blank">{{ item.name }}</a>
       </td>
       <td class="meta" style="text-align: right;">
         {% if item.size > 1048576 %}
@@ -47,7 +56,11 @@
           {{ '{:.1f}'.format(item.size / 1024) }} KB
         {% endif %}
       </td>
+      <td style="text-align: right; width: 60px;">
+        <audio controls src="/{{ route_base }}/{{ item.path }}" preload="none" style="height: 30px; width: 200px; margin: 0;"></audio>
+      </td>
     </tr>
+    {% endif %}
     {% endfor %}
   </table>
   {% endif %}

@@ -3,3 +3,4 @@ tidalapi==0.8.*
 python-dotenv==1.1.*
 requests>=2.31
 Pillow>=10.0
+pylast>=5.0

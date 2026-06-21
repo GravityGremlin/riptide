@@ -1,20 +1,19 @@
-name: riptide
+name: riptide-lite
 
 services:
-  riptide:
+  riptide-lite:
     build: .
-    container_name: riptide
+    container_name: riptide-lite
     restart: unless-stopped
     ports:
-      - "19287:19287"
+      - "19288:19288"
     volumes:
-      # Downloads (browseable in web UI)
+      # Downloads (browseable in web UI) - separate from experimental
       - ./downloads:/app/downloads
-      # Tidal auth token (from tidal-dl-ng login)
-      - ./config/tidal:/app/.config/tidal_dl_ng
-      # Streamrip config (Qobuz credentials)
-      - ./config/streamrip:/app/.config/streamrip
-      # Beets config
+      # Auth configs - shared from main repo
+      - ../riptide/config/tidal:/app/.config/tidal_dl_ng:ro
+      - ../riptide/config/streamrip:/app/.config/streamrip:ro
+      # Beets config - separate from experimental
       - ./config/beets:/app/.config/beets
       # Beets library target (shared with Funkwhale via NFS from morpheus)
       - /mnt/gamma/library/music:/music
@@ -25,4 +24,4 @@ services:
       - LIBRARY_DIR=/music
       - TIDAL_CONFIG_DIR=/app/.config/tidal_dl_ng
       - STREAMRIP_CONFIG_DIR=/app/.config/streamrip
-      - FLASK_PORT=19287
+      - FLASK_PORT=19288

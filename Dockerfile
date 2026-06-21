@@ -27,8 +27,8 @@ ENV DOWNLOAD_DIR=/app/downloads
 ENV LIBRARY_DIR=/music
 ENV TIDAL_CONFIG_DIR=/app/.config/tidal_dl_ng
 ENV STREAMRIP_CONFIG_DIR=/app/.config/streamrip
-ENV FLASK_PORT=19287
+ENV FLASK_PORT=19288
 
-EXPOSE 19287
+EXPOSE 19288
 
 CMD ["python", "-m", "app.main"]

@@ -1,194 +1,364 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}riptide{% endblock %}</title>
-  <style>
-    :root {
-      --bg: #0f0f15;
-      --bg-card: #181822;
-      --fg: #e0e0e0;
-      --fg-dim: #888;
-      --accent: #5c7cfa;
-      --accent-hover: #4c6be6;
-      --border: #2a2a35;
-      --tidal: #0ff;
-      --qobuz: #0bf;
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}riptide{% endblock %}</title>
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script src="https://unpkg.com/webamp@1.5.0/built/webamp.bundle.min.js"></script>
+<style>
+:root {
+  --bg: #0f0f15;
+  --bg-card: #181822;
+  --fg: #e0e0e0;
+  --fg-dim: #888;
+  --accent: #5c7cfa;
+  --accent-hover: #4c6be6;
+  --border: #2a2a35;
+  --tidal: #0ff;
+  --qobuz: #0bf;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1em;
+  padding-bottom: 100px;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1 {
+  font-size: 1.8em;
+  margin: .5em 0;
+}
+
+h2 {
+  font-size: 1.4em;
+  margin: 1em 0 .5em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.2em;
+}
+
+nav {
+  margin-bottom: 2em;
+  padding: 1em 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 1.5em;
+  align-items: center;
+}
+
+nav a {
+  font-weight: 500;
+  font-size: 1.1em;
+}
+
+/* Grid system for media items */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5em;
+  margin: 1em 0;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.card-img-wrap {
+  padding-top: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.card-content {
+  padding: 1em;
+}
+
+.card-title {
+  font-weight: 600;
+  margin-bottom: 0.5em;
+}
+
+.card-meta {
+  font-size: 0.9em;
+  color: var(--fg-dim);
+}
+
+/* Service badges */
+.service-tidal {
+  color: var(--tidal);
+  border: 1px solid var(--tidal);
+  background: rgba(0,255,255,0.1);
+}
+
+.service-qobuz {
+  color: var(--qobuz);
+  border: 1px solid var(--qobuz);
+  background: rgba(0,187,255,0.1);
+}
+
+/* Status badges */
+.status-queued { color: var(--fg-dim); }
+.status-running { color: #ffd43b; }
+.status-completed { color: #40c057; }
+.status-error { color: #fa5252; }
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.5em 1.2em;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btn:hover {
+  background: var(--accent-hover);
+  text-decoration: none;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+}
+
+.btn-outline:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Player bar */
+#webamp-player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #0a0a12;
+  border-top: 1px solid #333;
+  padding: 0.5em;
+  display: none;
+  font-family: system-ui, sans-serif;
+}
+
+#webamp-player .player-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+
+#webamp-track-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+#webamp-track-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#webamp-track-artist {
+  color: #888;
+  font-size: 0.85em;
+}
+
+#webamp-player .player-btn-play {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.4em 1em;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#webamp-player .player-btn-hide {
+  background: #333;
+  color: #888;
+  border: none;
+  padding: 0.4em 0.8em;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#webamp-app {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5em;
+}
+
+/* Footer */
+footer {
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid var(--border);
+  color: var(--fg-dim);
+  font-size: .85em;
+  text-align: center;
+}
+
+/* HTMX transitions */
+.htmx-settling #content-area {
+  opacity: 0;
+}
+
+.htmx-settling #content-area {
+  transition: opacity 0.15s ease-in;
+}
+</style>
+
+<script>
+// Global Webamp instance (persists across navigation)
+let webamp = null;
+let webampVisible = false;
+
+function initWebamp() {
+  if (webamp) return;
+  if (typeof Webamp === 'undefined') return;
+  webamp = new Webamp({
+    initialTracks: [],
+    __initialWindowLayout: {
+      main: { position: { top: 0, left: 0 } }
     }
-    body {
-      font-family: system-ui, sans-serif;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1em;
-      background: var(--bg);
-      color: var(--fg);
-      line-height: 1.5;
-    }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    h1 { font-size: 1.8em; margin: .5em 0; }
-    h2 { font-size: 1.4em; margin: 1em 0 .5em; border-bottom: 1px solid var(--border); padding-bottom: 0.2em; }
-    
-    nav {
-      margin-bottom: 2em;
-      padding: 1em 0;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      gap: 1.5em;
-      align-items: center;
-    }
-    nav a { font-weight: 500; font-size: 1.1em; }
-    
-    /* Grid system for media items */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 1.5em;
-      margin: 1em 0;
-    }
-    .card {
-      background: var(--bg-card);
-      border-radius: 8px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid var(--border);
-      transition: transform 0.2s, border-color 0.2s;
-    }
-    .card:hover {
-      transform: translateY(-2px);
-      border-color: var(--accent);
-    }
-    .card-img-wrap {
-      aspect-ratio: 1;
-      background: #111;
-      position: relative;
-    }
-    .card img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .card-empty-img {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #222;
-      color: #444;
-      font-size: 3em;
-    }
-    .card-info {
-      padding: 0.8em;
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    .card-title {
-      font-weight: 600;
-      font-size: 0.95em;
-      margin-bottom: 0.2em;
-      line-height: 1.2;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .card-meta {
-      color: var(--fg-dim);
-      font-size: 0.8em;
-      margin-top: 0.3em;
-    }
-    .card-actions {
-      margin-top: auto;
-      padding-top: 0.8em;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    /* Tables for list views (jobs, tracks) */
-    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-    th, td { text-align: left; padding: .6em; border-bottom: 1px solid var(--border); }
-    th { color: var(--fg-dim); font-weight: 500; font-size: 0.9em; text-transform: uppercase; }
-    tr:hover { background: var(--bg-card); }
-    
-    /* Forms & Inputs */
-    input, button, select {
-      padding: .6em .8em;
-      font-size: 1em;
-      background: var(--bg-card);
-      color: var(--fg);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-    }
-    input:focus { border-color: var(--accent); outline: none; }
-    
-    .btn {
-      display: inline-block;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background 0.2s;
-      text-align: center;
-    }
-    .btn-sm { padding: 0.3em 0.6em; font-size: 0.85em; }
-    .btn:hover { background: var(--accent-hover); text-decoration: none; }
-    
-    /* Utils */
-    .service-badge {
-      display: inline-block;
-      padding: .1em .4em;
-      border-radius: 3px;
-      font-size: .75em;
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .service-tidal { color: var(--tidal); border: 1px solid var(--tidal); background: rgba(0,255,255,0.1); }
-    .service-qobuz { color: var(--qobuz); border: 1px solid var(--qobuz); background: rgba(0,187,255,0.1); }
-    
-    .status-queued { color: var(--fg-dim); }
-    .status-running { color: #ffd43b; }
-    .status-completed { color: #40c057; }
-    .status-error { color: #fa5252; }
-    
-    footer {
-      margin-top: 3em;
-      padding-top: 1em;
-      border-top: 1px solid var(--border);
-      color: var(--fg-dim);
-      font-size: .85em;
-      text-align: center;
-    }
-  </style>
+  });
+  if (Webamp.browserIsSupported()) {
+    webamp.renderWhenReady(document.getElementById('webamp-app'));
+    webamp.on('trackChange', function() {
+      var track = webamp.getNowPlaying();
+      if (track) {
+        document.getElementById('webamp-track-title').textContent = track.title || '';
+        document.getElementById('webamp-track-artist').textContent = track.artist || '';
+      }
+    });
+  }
+}
+
+function toggleWebamp() {
+  var player = document.getElementById('webamp-player');
+  var app = document.getElementById('webamp-app');
+  if (webampVisible) {
+    app.style.display = 'none';
+    webampVisible = false;
+  } else {
+    app.style.display = 'flex';
+    webampVisible = true;
+    initWebamp();
+  }
+  player.style.display = 'block';
+}
+
+async function playAlbum(artist, album) {
+  initWebamp();
+  var player = document.getElementById('webamp-player');
+  player.style.display = 'block';
+  var resp = await fetch('/api/library');
+  var tracks = await resp.json();
+  if (album) tracks = tracks.filter(function(t) { return t.album === album; });
+  if (artist) tracks = tracks.filter(function(t) { return t.artist === artist; });
+  if (tracks.length === 0) return;
+  var webampTracks = tracks.map(function(t) {
+    return {
+      url: t.url,
+      metaData: { artist: t.artist, title: t.title, album: t.album }
+    };
+  });
+  webamp.setTracksToPlay(webampTracks);
+  document.getElementById('webamp-track-title').textContent = tracks[0].title;
+  document.getElementById('webamp-track-artist').textContent = tracks[0].artist;
+  // Show the Winamp UI when playing
+  if (!webampVisible) toggleWebamp();
+}
+
+function playTrack(url, artist, title, album) {
+  initWebamp();
+  var player = document.getElementById('webamp-player');
+  player.style.display = 'block';
+  webamp.setTracksToPlay([{
+    url: url,
+    metaData: { artist: artist, title: title, album: album }
+  }]);
+  document.getElementById('webamp-track-title').textContent = title;
+  document.getElementById('webamp-track-artist').textContent = artist;
+  // Show the Winamp UI when playing
+  if (!webampVisible) toggleWebamp();
+}
+</script>
 </head>
-<body>
-  <nav>
-    <a href="/" style="font-weight: 800; font-size: 1.3em; letter-spacing: 1px;">RIPTIDE</a>
-    <a href="/">Search</a>
-    <a href="/jobs">Jobs</a>
-    <a href="/library">Library</a>
-    <a href="/player">Player</a>
-  </nav>
 
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      {% for msg in messages %}
-        <div style="padding: 1em; background: rgba(92, 124, 250, 0.1); border: 1px solid var(--accent); border-radius: 4px; margin-bottom: 1em; color: #fff;">{{ msg }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+<body hx-boost="true" hx-target="#content-area" hx-select="#content-area">
 
+<nav>
+  <a href="/" style="font-weight: 800; font-size: 1.3em; letter-spacing: 1px;">RIPTIDE</a>
+  <a href="/">Search</a>
+  <a href="/jobs">Jobs</a>
+  <a href="/library">Library</a>
+  <a href="/player" onclick="toggleWebamp(); return false;">Player</a>
+</nav>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    {% for msg in messages %}
+      <div style="padding: 1em; background: rgba(92, 124, 250, 0.1); border: 1px solid var(--accent); border-radius: 4px; margin-bottom: 1em; color: #fff;">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div id="content-area">
   {% block content %}{% endblock %}
 
   <footer>
-    riptide v{{ version }} &mdash; modern experimental &bull; JS required
+    riptide v{{ version }} &mdash; modern experimental &bull; required
   </footer>
+</div>
+
+<!-- Persistent Webamp player (survives page navigation) -->
+<div id="webamp-player" hx-preserve>
+  <div class="player-inner">
+    <div id="webamp-track-info">
+      <div id="webamp-track-title"></div>
+      <div id="webamp-track-artist"></div>
+    </div>
+    <button class="player-btn-play" onclick="toggleWebamp()">Winamp</button>
+    <button class="player-btn-hide" onclick="document.getElementById('webamp-player').style.display='none'">Hide</button>
+  </div>
+  <!-- Webamp mounts when expanded -->
+  <div id="webamp-app" style="display: none;"></div>
+</div>
+
 </body>
 </html>

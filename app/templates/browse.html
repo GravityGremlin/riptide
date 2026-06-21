@@ -29,10 +29,10 @@
       {% endif %}
     </h1>
     <div style="display: flex; gap: 0.5em; align-items: center;">
-      {% if files %}
-        {% set album_name = breadcrumbs[-1].name if breadcrumbs else '' %}
-        <a href="/player?album={{ album_name }}" class="btn btn-sm" style="text-decoration: none;">&#9654; Winamp</a>
-      {% endif %}
+{% if files %}
+  {% set album_name = breadcrumbs[-1].name if breadcrumbs else label %}
+  <a href="#" class="btn btn-sm" style="text-decoration: none;" onclick="playAlbum('', '{{ album_name }}'); return false;">&#9654; Winamp</a>
+{% endif %}
       {% if dirs %}
       <div id="view-toggle" style="display: flex; gap: 0.3em; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 0.2em;">
         <button id="btn-list" onclick="setView('list')" class="view-btn active" title="List view">&#9776;</button>
@@ -102,11 +102,9 @@
               {{ item.size }} B
             {% endif %}
           </td>
-          <td style="text-align: right; width: 220px;">
-            <audio controls preload="none" style="height: 30px; width: 200px;">
-              <source src="/api/stream/{{ item.path }}" type="audio/opus">
-            </audio>
-          </td>
+<td style="text-align: right; width: 80px;">
+          <button onclick="playTrack('/api/stream/{{ item.path }}', '{{ item.name }}', '{{ breadcrumbs[-2].name if breadcrumbs|length > 1 else '' }}', '{{ breadcrumbs[-1].name if breadcrumbs else '' }}')" style="background: var(--accent); color: white; border: none; padding: 0.3em 0.8em; border-radius: 4px; cursor: pointer; font-size: 0.85em;">Play</button>
+        </td>
         </tr>
         {% endif %}
       {% endfor %}

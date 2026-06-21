@@ -581,7 +581,9 @@ def api_library():
                 "duration": 0
             })
 
-    return Response(json.dumps(tracks), mimetype="application/json")
+    resp = Response(json.dumps(tracks), mimetype="application/json")
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    return resp
 
 
 @app.route("/api/stream/<path:subpath>")
@@ -643,13 +645,6 @@ def api_stream(subpath):
     resp.headers["Access-Control-Allow-Origin"] = "*"
     resp.headers["Cache-Control"] = "public, max-age=3600"
     return resp
-
-
-@app.route("/player")
-def player():
-    album = request.args.get("album", "")
-    artist = request.args.get("artist", "")
-    return render_template("player.html", album=album, artist=artist)
 
 
 # ── Background Download Runner ─────────────────────────────────

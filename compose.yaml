@@ -16,8 +16,8 @@ services:
       - ./config/streamrip:/app/.config/streamrip
       # Beets config
       - ./config/beets:/app/.config/beets
-      # Beets library target (shared with Funkwhale via NFS)
-      - /mnt/beta/library/music:/music
+      # Beets library target (shared with Funkwhale via NFS from morpheus)
+      - /mnt/gamma/library/music:/music
       # Job state persistence
       - ./data:/app/data
     environment:

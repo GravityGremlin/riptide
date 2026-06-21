@@ -84,24 +84,22 @@
 {% if qobuz_albums or tidal_albums %}
 <div class="actions">
   {% if qobuz_albums %}
-  <form method="post" action="/download" style="display:inline-block; margin-right:1em;">
-    <input type="hidden" name="service" value="qobuz">
-    {% for a in qobuz_albums %}
-      <input type="hidden" name="url" value="{{ a.url }}">
-    {% endfor %}
-    <label><input type="checkbox" name="convert_opus" value="1"> Convert to Opus</label>
-    <button type="submit" class="btn">Download all Qobuz albums ({{ qobuz_albums|length }})</button>
-  </form>
-  {% endif %}
-  {% if tidal_albums %}
-  <form method="post" action="/download" style="display:inline-block;">
-    <input type="hidden" name="service" value="tidal">
-    {% for a in tidal_albums %}
-      <input type="hidden" name="url" value="{{ a.url }}">
-    {% endfor %}
-    <label><input type="checkbox" name="convert_opus" value="1"> Convert to Opus</label>
-    <button type="submit" class="btn">Download all Tidal albums ({{ tidal_albums|length }})</button>
-  </form>
+   <form method="post" action="/download" style="display:inline-block; margin-right:1em;">
+     <input type="hidden" name="service" value="qobuz">
+     {% for a in qobuz_albums %}
+       <input type="hidden" name="url" value="{{ a.url }}">
+     {% endfor %}
+     <button type="submit" class="btn">Download all Qobuz albums ({{ qobuz_albums|length }})</button>
+   </form>
+   {% endif %}
+   {% if tidal_albums %}
+   <form method="post" action="/download" style="display:inline-block;">
+     <input type="hidden" name="service" value="tidal">
+     {% for a in tidal_albums %}
+       <input type="hidden" name="url" value="{{ a.url }}">
+     {% endfor %}
+     <button type="submit" class="btn">Download all Tidal albums ({{ tidal_albums|length }})</button>
+   </form>
   {% endif %}
 </div>
 {% endif %}

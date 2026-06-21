@@ -24,7 +24,7 @@ WORKDIR /app
 USER app
 
 ENV DOWNLOAD_DIR=/app/downloads
-ENV LIBRARY_DIR=/app/library
+ENV LIBRARY_DIR=/music
 ENV TIDAL_CONFIG_DIR=/app/.config/tidal_dl_ng
 ENV STREAMRIP_CONFIG_DIR=/app/.config/streamrip
 ENV FLASK_PORT=19287

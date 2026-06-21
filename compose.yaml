@@ -16,13 +16,13 @@ services:
       - ./config/streamrip:/app/.config/streamrip
       # Beets config
       - ./config/beets:/app/.config/beets
-      # Beets library target
-      - ./library:/app/library
+      # Beets library target (shared with Funkwhale via NFS)
+      - /mnt/beta/library/music:/music
       # Job state persistence
       - ./data:/app/data
     environment:
       - DOWNLOAD_DIR=/app/downloads
-      - LIBRARY_DIR=/app/library
+      - LIBRARY_DIR=/music
       - TIDAL_CONFIG_DIR=/app/.config/tidal_dl_ng
       - STREAMRIP_CONFIG_DIR=/app/.config/streamrip
       - FLASK_PORT=19287

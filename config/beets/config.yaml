@@ -1,8 +1,79 @@
-directory: /app/library
+directory: /music
+
 import:
-  copy: no
-  move: yes
-  autotag: yes
-  timid: no
-  quiet_fallback: asis
-plugins: []
+    copy: no
+    move: yes
+    autotag: yes
+    quiet: yes
+    quiet_fallback: asis
+    timid: no
+    default_action: apply
+    incremental: yes
+    resume: no
+    write: yes
+
+plugins:
+    - fetchart
+    - embedart
+    - lastgenre
+    - replaygain
+    - mbsync
+    - duplicates
+    - scrub
+
+musicbrainz:
+    host: musicbrainz.org
+    https: yes
+    ratelimit: 1
+    ratelimit_interval: 1.0
+    extra_tags: [year, trackcount]
+
+match:
+    strong_rec_thresh: 0.04
+    preferred:
+        original_year: yes
+    ignored_media:
+        - DVD
+        - SACD
+        - Laserdisc
+
+paths:
+    default: $albumartist/$album ($year)/$track $title
+    singleton: Non-Album/$artist/$title
+    comp: Various Artists/$album ($year)/$track $title
+
+asciify_paths: yes
+art_filename: cover
+
+fetchart:
+    auto: yes
+    maxwidth: 500
+    sources:
+        - filesystem
+        - coverart
+        - itunes
+        - amazon
+
+embedart:
+    auto: yes
+    maxwidth: 500
+    ifempty: no
+    remove_art_file: no
+
+lastgenre:
+    auto: yes
+    source: album
+    whitelist: yes
+    canonical: yes
+    count: 1
+    min_weight: 10
+    title_case: yes
+
+replaygain:
+    backend: ffmpeg
+    auto: yes
+    overwrite: no
+    targetlevel: 89
+    r128: [Opus]
+    r128_targetlevel: 84
+    peak: true

@@ -20,7 +20,7 @@ from flask import Flask, flash, redirect, render_template, request, url_for
 
 # ── Config ─────────────────────────────────────────────────────
 DOWNLOAD_DIR = Path(os.environ.get("DOWNLOAD_DIR", "/app/downloads"))
-LIBRARY_DIR = Path(os.environ.get("LIBRARY_DIR", "/app/library"))
+LIBRARY_DIR = Path(os.environ.get("LIBRARY_DIR", "/music"))
 TIDAL_CONFIG_DIR = Path(os.environ.get("TIDAL_CONFIG_DIR", "~/.config/tidal_dl_ng")).expanduser()
 STREAMRIP_CONFIG_DIR = Path(os.environ.get("STREAMRIP_CONFIG_DIR", "~/.config/streamrip")).expanduser()
 JOBS_DIR = Path("/app/data")
@@ -366,7 +366,6 @@ def album_tracks(album_id: str):
 @app.route("/download", methods=["POST"])
 def download():
     urls = request.form.getlist("url")
-    convert_opus = request.form.get("convert_opus") == "1"
     if not urls:
         flash("No items selected.")
         return redirect(request.referrer or url_for("index"))
@@ -388,7 +387,6 @@ def download():
             "tracks_done": 0,
             "tracks_total": 0,
             "command": cmd,
-            "convert_opus": convert_opus,
             "log": [],
             "created_at": _now_iso(),
             "started_at": None,
@@ -530,7 +528,7 @@ def _run_download(job_id: str):
             roots = new_dirs
         _update(status="processing", progress="Processing downloads")
 
-        if job.get("convert_opus") and new_files:
+        if new_files:
             _job_convert_opus(new_files)
 
         if roots:

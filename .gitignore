@@ -3,8 +3,10 @@ __pycache__/
 .env
 
 # Credentials / local state
-config/tidal/
-config/streamrip/
+config/tidal/token.json
+config/tidal/*.bak
+config/streamrip/*.db
+config/beets/library.db
 data/
 downloads/
 library/

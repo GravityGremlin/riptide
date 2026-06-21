@@ -1,22 +1,117 @@
 {% extends "layout.html" %}
 {% block title %}Library{% endblock %}
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2em;">
-  <h1>Library <small style="color: var(--fg-dim); font-size: 0.6em; font-weight: normal;">{{ current }}</small></h1>
-</div>
 
-{% if current %}
-<div style="margin-bottom: 1.5em;">
-  <a href="/{{ route_base }}/{{ parent }}" class="btn btn-sm" style="background: var(--bg-card); color: var(--fg);">&larr; Up to Parent</a>
-</div>
-{% endif %}
+<!-- Breadcrumbs -->
+<nav style="margin-bottom: 1.5em; font-size: 0.9em;">
+  <a href="/{{ route_base }}" style="color: var(--accent);">~/{{ label }}</a>
+  {% for crumb in breadcrumbs %}
+    <span style="color: var(--fg-dim); margin: 0 0.3em;">/</span>
+    {% if loop.last %}
+      <span style="color: var(--fg);">{{ crumb.name }}</span>
+    {% else %}
+      <a href="/{{ route_base }}/{{ crumb.path }}" style="color: var(--accent);">{{ crumb.name }}</a>
+    {% endif %}
+  {% endfor %}
+</nav>
 
 {% if items %}
-  {# Directories grid (artists/albums) #}
   {% set dirs = items | selectattr('is_dir') | list %}
+  {% set files = items | rejectattr('is_dir') | list %}
+
+  <!-- View Toggle (only show when dirs exist) -->
   {% if dirs %}
-  <div class="grid">
-  {% for item in dirs %}
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5em;">
+    <h1 style="margin: 0;">
+      {% if breadcrumbs %}
+        {{ breadcrumbs[-1].name }}
+      {% else %}
+        {{ label }}
+      {% endif %}
+    </h1>
+    <div id="view-toggle" style="display: flex; gap: 0.3em; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 0.2em;">
+      <button id="btn-list" onclick="setView('list')" class="view-btn active" title="List view">☰</button>
+      <button id="btn-grid" onclick="setView('grid')" class="view-btn" title="Grid view">▦</button>
+    </div>
+  </div>
+  <style>
+    .view-btn {
+      background: transparent;
+      border: none;
+      color: var(--fg-dim);
+      padding: 0.3em 0.7em;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1.1em;
+      transition: all 0.15s;
+    }
+    .view-btn.active { background: var(--accent); color: #fff; }
+    .view-btn:hover { color: var(--fg); }
+    #view-grid { display: none; }
+    #view-grid.active { display: grid; }
+    #view-list { display: block; }
+    #view-list.active { display: block; }
+    #view-list.hidden { display: none; }
+  </style>
+  {% endif %}
+
+  <!-- List View (default) -->
+  <div id="view-list" class="{% if not dirs %}active{% else %}active{% endif %}">
+    {% if dirs %}
+    <table>
+      <tr><th></th><th>Name</th></tr>
+      {% for item in dirs %}
+      <tr>
+        <td style="width: 32px; text-align: center;">
+          {% if item.cover %}
+            <img src="{{ item.cover }}" alt="" style="width: 32px; height: 32px; border-radius: 4px; display: block;" loading="lazy">
+          {% else %}
+            <span style="color: var(--fg-dim);">{{ "👤" if not current else "📁" }}</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/{{ route_base }}/{{ item.path }}" style="font-weight: 500;">{{ item.name }}/</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
+    {% if files %}
+    <table style="margin-top: {% if dirs %}2em{% else %}0{% endif %};">
+      <tr><th></th><th>Track</th><th style="text-align: right;">Size</th><th style="text-align: right;">Play</th></tr>
+      {% for item in files %}
+        {% if not item.name.lower().endswith(('.jpg', '.png', '.txt', '.log', '.xml', '.json')) %}
+        <tr>
+          <td style="width: 32px; text-align: center; color: var(--fg-dim);">♪</td>
+          <td>
+            <a href="/{{ route_base }}/{{ item.path }}" target="_blank">{{ item.name }}</a>
+          </td>
+          <td class="meta" style="text-align: right;">
+            {% if item.size > 1048576 %}
+              {{ '{:.1f}'.format(item.size / 1048576) }} MB
+            {% elif item.size > 1024 %}
+              {{ '{:.1f}'.format(item.size / 1024) }} KB
+            {% else %}
+              {{ item.size }} B
+            {% endif %}
+          </td>
+          <td style="text-align: right; width: 220px;">
+            <audio controls preload="none" style="height: 30px; width: 200px;">
+              <source src="/{{ route_base }}/{{ item.path }}" type="audio/opus">
+            </audio>
+          </td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+
+  <!-- Grid View -->
+  {% if dirs %}
+  <div id="view-grid" class="grid">
+    {% for item in dirs %}
     <div class="card" style="aspect-ratio: 1;">
       <a href="/{{ route_base }}/{{ item.path }}" style="display: flex; flex-direction: column; height: 100%;">
         {% if item.cover %}
@@ -25,7 +120,7 @@
           </div>
         {% else %}
           <div class="card-empty-img" style="background: rgba(92, 124, 250, 0.1); color: var(--accent); flex-grow: 1;">
-            {{ "💿" if current else "👤" }}
+            {{ "👤" if not current else "💿" }}
           </div>
         {% endif %}
         <div style="padding: 0.8em; background: var(--bg-card); text-align: center; border-top: 1px solid var(--border);">
@@ -33,38 +128,40 @@
         </div>
       </a>
     </div>
-  {% endfor %}
+    {% endfor %}
   </div>
   {% endif %}
 
-  {# Files list (tracks) #}
-  {% set files = items | rejectattr('is_dir') | list %}
-  {% if files %}
-  <table style="margin-top: 2.5em;">
-    <tr><th>Track</th><th style="text-align: right;">Size</th><th>Play</th></tr>
-    {% for item in files %}
-    {% if not item.name.lower().endswith('.jpg') and not item.name.lower().endswith('.png') %}
-    <tr>
-      <td>
-        <span style="color: var(--fg-dim); margin-right: 0.5em;">♪</span>
-        <a href="/{{ route_base }}/{{ item.path }}" target="_blank">{{ item.name }}</a>
-      </td>
-      <td class="meta" style="text-align: right;">
-        {% if item.size > 1048576 %}
-          {{ '{:.1f}'.format(item.size / 1048576) }} MB
-        {% else %}
-          {{ '{:.1f}'.format(item.size / 1024) }} KB
-        {% endif %}
-      </td>
-      <td style="text-align: right; width: 60px;">
-        <audio controls src="/{{ route_base }}/{{ item.path }}" preload="none" style="height: 30px; width: 200px; margin: 0;"></audio>
-      </td>
-    </tr>
-    {% endif %}
-    {% endfor %}
-  </table>
-  {% endif %}
 {% else %}
-  <p style="color: var(--fg-dim); text-align: center; margin: 3em 0;">Folder is empty.</p>
+  <p style="color: var(--fg-dim); text-align: center; margin: 3em 0;">This folder is empty.</p>
 {% endif %}
+
+<script>
+function setView(mode) {
+  const list = document.getElementById('view-list');
+  const grid = document.getElementById('view-grid');
+  const btnList = document.getElementById('btn-list');
+  const btnGrid = document.getElementById('btn-grid');
+  if (mode === 'grid') {
+    list.classList.add('hidden');
+    grid.classList.add('active');
+    btnList.classList.remove('active');
+    btnGrid.classList.add('active');
+    localStorage.setItem('riptide-view', 'grid');
+  } else {
+    list.classList.remove('hidden');
+    list.classList.add('active');
+    grid.classList.remove('active');
+    btnList.classList.add('active');
+    btnGrid.classList.remove('active');
+    localStorage.setItem('riptide-view', 'list');
+  }
+}
+// Restore saved view preference
+(function() {
+  var saved = localStorage.getItem('riptide-view');
+  if (saved) setView(saved);
+})();
+</script>
+
 {% endblock %}

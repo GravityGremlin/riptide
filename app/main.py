@@ -480,16 +480,23 @@ def _browse_directory(root: Path, subpath: str, label: str, route_base: str):
         
         items.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
         
-        parent = ""
-        if subpath:
-            parent = os.path.dirname(subpath)
-            if parent == ".":
-                parent = ""
-        
-        return render_template(
-            "browse.html", items=items, current=subpath, parent=parent,
-            label=label, route_base=route_base, root_dir=root_str
-        )
+    parent = ""
+    breadcrumbs = []
+    if subpath:
+        parent = os.path.dirname(subpath)
+        if parent == ".":
+            parent = ""
+            
+        parts = subpath.split(os.sep)
+        cum_path = ""
+        for p in parts:
+            cum_path = os.path.join(cum_path, p) if cum_path else p
+            breadcrumbs.append({"name": p, "path": cum_path})
+
+    return render_template(
+        "browse.html", items=items, current=subpath, parent=parent, breadcrumbs=breadcrumbs,
+        label=label, route_base=route_base, root_dir=root_str
+    )
     
     # 2. Try as file (NFS: open works even when exists() returns False)
     if target_str.endswith("library.db"):

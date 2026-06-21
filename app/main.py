@@ -239,10 +239,10 @@ def search():
                     "id": a.id, "service": "tidal", "type": "artist",
                     "title": a.name, "artist": "",
                     "url": f"https://tidal.com/browse/artist/{a.id}",
-                    "year": "", "track_count": 0,
+                    "year": "", "track_count": 0, "cover": a.image(320) if hasattr(a, "image") else ""
                 })
             for a in (sr.get("albums", []) or [])[:12]:
-                arts = getattr(a, "artists", []) or []
+                arts = getattr(a, "artists", [])
                 results["albums"].append({
                     "id": a.id, "service": "tidal", "type": "album",
                     "title": a.name,
@@ -250,9 +250,10 @@ def search():
                     "url": f"https://tidal.com/browse/album/{a.id}",
                     "year": a.release_date.year if getattr(a, "release_date", None) else "",
                     "track_count": a.num_tracks,
+                    "cover": a.image(320) if hasattr(a, "image") else ""
                 })
             for t in (sr.get("tracks", []) or [])[:12]:
-                arts = getattr(t, "artists", []) or []
+                arts = getattr(t, "artists", [])
                 track_album = getattr(t, "album", None)
                 results["tracks"].append({
                     "id": t.id, "service": "tidal", "type": "track",
@@ -261,21 +262,23 @@ def search():
                     "url": f"https://tidal.com/browse/track/{t.id}",
                     "album": track_album.name if track_album else "",
                     "duration": getattr(t, "duration", 0),
+                    "cover": track_album.image(320) if track_album and hasattr(track_album, "image") else ""
                 })
         except Exception:
             pass
 
     # ── Qobuz search ──
-    for media_type in ("artist", "album", "track"):
-        items = _rip_search("qobuz", media_type, q)
-        for item in items:
-            target = results.get(f"{media_type}s", results.get(f"{media_type}s", results))
-            if media_type == "track":
-                results["tracks"].append({
-                    **item, "album": "", "duration": 0,
-                })
-            else:
-                target.append(item)
+        for media_type in ("artist", "album", "track"):
+            items = _rip_search("qobuz", media_type, q)
+            for item in items:
+                item["cover"] = ""  # No cover art available via streamrip CLI
+                target = results.get(f"{media_type}s")
+                if media_type == "track":
+                    results["tracks"].append({
+                        **item, "album": "", "duration": 0
+                    })
+                else:
+                    target.append(item)
 
     return render_template("results.html", q=q, results=results)
 
@@ -303,6 +306,7 @@ def artist_albums(artist_id: str):
                 "year": a.release_date.year if getattr(a, "release_date", None) else "",
                 "track_count": a.num_tracks,
                 "url": f"https://tidal.com/browse/album/{a.id}",
+                "cover": a.image(320) if hasattr(a, "image") else ""
             })
         return render_template("albums.html", artist_name=artist_obj.name, albums=album_list, q=q, service="tidal")
 
@@ -453,7 +457,7 @@ def _browse_directory(root: Path, subpath: str, label: str, route_base: str):
 @app.route("/browse")
 @app.route("/browse/<path:subpath>")
 def browse(subpath=""):
-    return _browse_directory(DOWNLOAD_DIR, subpath, "Downloads", "browse")
+    return redirect(url_for("library", subpath=subpath))
 
 
 @app.route("/library")

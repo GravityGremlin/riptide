@@ -1,11 +1,13 @@
 {% extends "layout.html" %}
 {% block title %}Search: {{ q }}{% endblock %}
 {% block content %}
-<h1>Search results: "{{ q }}"</h1>
-<form method="get" action="/search" style="margin-bottom:1em">
-  <input type="text" name="q" value="{{ q }}" size="30">
-  <button type="submit">Search again</button>
-</form>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2em;">
+  <h1>Results for "{{ q }}"</h1>
+  <form method="get" action="/search" style="display: flex; gap: 0.5em;">
+    <input type="text" name="q" value="{{ q }}" size="30">
+    <button type="submit" class="btn btn-sm">Search again</button>
+  </form>
+</div>
 
 {% set tidal_artists = results.artists | selectattr('service', 'equalto', 'tidal') | list %}
 {% set qobuz_artists = results.artists | selectattr('service', 'equalto', 'qobuz') | list %}
@@ -14,76 +16,93 @@
 {% set tidal_tracks = results.tracks | selectattr('service', 'equalto', 'tidal') | list %}
 {% set qobuz_tracks = results.tracks | selectattr('service', 'equalto', 'qobuz') | list %}
 
-{% macro album_table(title, albums) %}
-{% if albums %}
-<h2>{{ title }}</h2>
-<table>
-<tr><th>Album</th><th>Artist</th><th>Year</th><th>Tracks</th><th>Service</th><th>Download</th></tr>
-{% for a in albums %}
-<tr>
-  <td><a href="/album/{{ a.id }}?service={{ a.service }}">{{ a.title }}</a></td>
-  <td>{{ a.artist }}</td>
-  <td>{{ a.year }}</td>
-  <td>{{ a.track_count }}</td>
-  <td><span class="service-badge service-{{ a.service }}">{{ a.service }}</span></td>
-  <td>
-    <form method="post" action="/download" style="display:inline">
-      <input type="hidden" name="url" value="{{ a.url }}">
-      <button type="submit" class="btn">Download album</button>
-    </form>
-  </td>
-</tr>
-{% endfor %}
-</table>
-{% endif %}
+{% macro album_grid(title, albums) %}
+  {% if albums %}
+  <h2>{{ title }}</h2>
+  <div class="grid">
+    {% for a in albums %}
+    <div class="card">
+      <div class="card-img-wrap">
+        {% if a.cover %}
+          <img src="{{ a.cover }}" alt="Cover" loading="lazy">
+        {% else %}
+          <div class="card-empty-img">♪</div>
+        {% endif %}
+      </div>
+      <div class="card-info">
+        <a class="card-title" href="/album/{{ a.id }}?service={{ a.service }}">{{ a.title }}</a>
+        <div class="card-meta">{{ a.artist }}</div>
+        <div class="card-meta" style="opacity: 0.7;">
+          <span class="service-badge service-{{ a.service }}">{{ a.service }}</span>
+          {{ a.year }} &bull; {{ a.track_count }} trk
+        </div>
+        <div class="card-actions">
+          <form method="post" action="/download" style="width: 100%;">
+            <input type="hidden" name="url" value="{{ a.url }}">
+            <button type="submit" class="btn btn-sm" style="width: 100%;">Download</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 {% endmacro %}
 
-{% macro artist_list(title, artists) %}
-{% if artists %}
-<h2>{{ title }}</h2>
-<ul>
-{% for a in artists %}
-  <li>
-    <a href="/artist/{{ a.id }}?service={{ a.service }}&q={{ q }}">{{ a.title }}</a>
-    <span class="service-badge service-{{ a.service }}">{{ a.service }}</span>
-    <span class="meta">(artist)</span>
-  </li>
-{% endfor %}
-</ul>
-{% endif %}
+{% macro artist_grid(title, artists) %}
+  {% if artists %}
+  <h2>{{ title }}</h2>
+  <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
+    {% for a in artists %}
+    <div class="card" style="border-radius: 50%; overflow: hidden; aspect-ratio: 1;">
+      <a href="/artist/{{ a.id }}?service={{ a.service }}" style="display: block; height: 100%; position: relative;">
+        {% if a.cover %}
+          <img src="{{ a.cover }}" alt="{{ a.title }}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+        {% else %}
+          <div class="card-empty-img">👤</div>
+        {% endif %}
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 0.5em; text-align: center; color: white;">
+          <div style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ a.title }}</div>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 {% endmacro %}
 
 {% macro track_table(title, tracks) %}
-{% if tracks %}
-<h2>{{ title }}</h2>
-<table>
-<tr><th>Title</th><th>Artist</th><th>Album</th><th>Service</th><th></th></tr>
-{% for t in tracks %}
-<tr>
-  <td>{{ t.title }}</td>
-  <td>{{ t.artist }}</td>
-  <td>{{ t.album }}</td>
-  <td><span class="service-badge service-{{ t.service }}">{{ t.service }}</span></td>
-  <td>
-    <form method="post" action="/download" style="display:inline">
-      <input type="hidden" name="url" value="{{ t.url }}">
-      <button type="submit">Download</button>
-    </form>
-  </td>
-</tr>
-{% endfor %}
-</table>
-{% endif %}
+  {% if tracks %}
+  <h2>{{ title }}</h2>
+  <table>
+    <tr><th></th><th>Track</th><th>Artist</th><th>Album</th><th>Service</th><th>Download</th></tr>
+    {% for t in tracks %}
+    <tr>
+      <td style="width: 40px; padding: .2em .6em;">
+        {% if t.cover %}
+          <img src="{{ t.cover }}" alt="" style="width: 40px; height: 40px; border-radius: 4px; display: block;" loading="lazy">
+        {% else %}
+          <div style="width: 40px; height: 40px; background: #222; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #555;">♪</div>
+        {% endif %}
+      </td>
+      <td><strong>{{ t.title }}</strong></td>
+      <td>{{ t.artist }}</td>
+      <td class="meta">{{ t.album }}</td>
+      <td><span class="service-badge service-{{ t.service }}">{{ t.service }}</span></td>
+      <td>
+        <form method="post" action="/download" style="display:inline">
+          <input type="hidden" name="url" value="{{ t.url }}">
+          <button type="submit" class="btn btn-sm">Download</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
 {% endmacro %}
 
-{# Prioritize Albums - primary use case #}
-{{ album_table('Qobuz Albums', qobuz_albums) }}
-{{ album_table('Tidal Albums', tidal_albums) }}
-
-{# Bulk download all albums per service #}
-{% if qobuz_albums or tidal_albums %}
 <div class="actions">
-  {% if qobuz_albums %}
+   {% if qobuz_albums %}
    <form method="post" action="/download" style="display:inline-block; margin-right:1em;">
      <input type="hidden" name="service" value="qobuz">
      {% for a in qobuz_albums %}
@@ -100,19 +119,19 @@
      {% endfor %}
      <button type="submit" class="btn">Download all Tidal albums ({{ tidal_albums|length }})</button>
    </form>
-  {% endif %}
+   {% endif %}
 </div>
-{% endif %}
 
-{{ artist_list('Qobuz Artists', qobuz_artists) }}
-{{ artist_list('Tidal Artists', tidal_artists) }}
+{{ artist_grid("Tidal Artists", tidal_artists) }}
+{{ album_grid("Tidal Albums", tidal_albums) }}
+{{ track_table("Tidal Tracks", tidal_tracks) }}
 
-{{ track_table('Qobuz Tracks', qobuz_tracks) }}
-{{ track_table('Tidal Tracks', tidal_tracks) }}
+{{ artist_grid("Qobuz Artists", qobuz_artists) }}
+{{ album_grid("Qobuz Albums", qobuz_albums) }}
+{{ track_table("Qobuz Tracks", qobuz_tracks) }}
 
 {% if not results.artists and not results.albums and not results.tracks %}
-<p class="error">No results found for "{{ q }}".</p>
+<p style="color: var(--fg-dim); text-align: center; margin: 3em 0;">No results found.</p>
 {% endif %}
 
-<p><a href="/">&larr; Back to search</a></p>
 {% endblock %}

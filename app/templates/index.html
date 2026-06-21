@@ -1,11 +1,17 @@
 {% extends "layout.html" %}
 {% block title %}riptide - Search{% endblock %}
 {% block content %}
-<h1>riptide</h1>
-<p>Search Tidal and Qobuz for artists, albums, or tracks.</p>
-<form method="get" action="/search">
-  <input type="text" name="q" placeholder="Artist, album or track..." required autofocus size="40">
-  <button type="submit">Search</button>
-</form>
-<p class="meta">No JS needed.</p>
+<div style="text-align: center; padding: 4em 0;">
+  <h1 style="font-size: 3em; margin-bottom: 0.2em; font-weight: 800; letter-spacing: 2px;">RIPTIDE</h1>
+  <p style="color: var(--fg-dim); font-size: 1.2em; margin-bottom: 2em;">Search and preserve high-fidelity music</p>
+  
+  <form method="get" action="/search" style="max-width: 600px; margin: 0 auto; display: flex; gap: 0.5em;">
+    <input type="text" name="q" placeholder="Search artists, albums, or tracks..." required autofocus style="flex-grow: 1; padding: 0.8em 1em; font-size: 1.1em;">
+    <button type="submit" class="btn" style="padding: 0 1.5em; font-size: 1.1em; font-weight: bold;">Search</button>
+  </form>
+  
+  {% if not tidal_ok %}
+  <p style="color: var(--fg-dim); margin-top: 2em;">Warning: Tidal token is missing or invalid. Set it up using tidal-dl-ng natively.</p>
+  {% endif %}
+</div>
 {% endblock %}

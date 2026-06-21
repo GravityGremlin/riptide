@@ -5,20 +5,20 @@
 
 {% if jobs %}
 <table>
-<tr><th>ID</th><th>URL</th><th>Service</th><th>Status</th><th>Progress</th><th>Created</th><th></th></tr>
-{% for j in jobs %}
-<tr>
-  <td><a href="/status/{{ j.id }}">{{ j.id }}</a></td>
-  <td class="meta" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ j.url }}</td>
-  <td><span class="service-badge service-{{ j.service }}">{{ j.service }}</span></td>
-  <td class="status-{{ j.status }}"><strong>{{ {'running': 'Downloading', 'processing': 'Processing', 'completed': 'Import Complete', 'error': 'Error'}.get(j.status, j.status) }}</strong></td>
-  <td>{{ j.progress or '—' }}</td>
-  <td class="meta">{{ j.created_at[:16] }}</td>
-  <td><a class="btn" href="/status/{{ j.id }}">View</a></td>
-</tr>
-{% endfor %}
+  <tr><th>ID</th><th>URL</th><th>Service</th><th>Status</th><th>Progress</th><th>Created</th><th></th></tr>
+  {% for j in jobs %}
+  <tr>
+    <td><a href="/status/{{ j.id }}">{{ j.id }}</a></td>
+    <td class="meta" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ j.url }}">{{ j.url }}</td>
+    <td><span class="service-badge service-{{ j.service }}">{{ j.service }}</span></td>
+    <td class="status-{{ j.status }}"><strong>{{ {'running': 'Downloading', 'processing': 'Processing', 'completed': 'Import Complete', 'error': 'Error'}.get(j.status, j.status) }}</strong></td>
+    <td>{{ j.progress or '—' }}</td>
+    <td class="meta">{{ j.created_at[:16] }}</td>
+    <td><a class="btn btn-sm" href="/status/{{ j.id }}">View</a></td>
+  </tr>
+  {% endfor %}
 </table>
 {% else %}
-<p>No download jobs yet. <a href="/">Search</a> for music to get started.</p>
+<p style="color: var(--fg-dim); text-align: center; margin: 3em 0;">No download jobs yet. <a href="/">Search</a> for music to get started.</p>
 {% endif %}
 {% endblock %}

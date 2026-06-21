@@ -531,6 +531,127 @@ def library(subpath=""):
     return _browse_directory(LIBRARY_DIR, subpath, "Library", "library")
 
 
+
+# Webamp Integration API Routes ───────────────────────────────
+
+@app.route("/api/library")
+def api_library():
+    import os
+    import mimetypes
+    from flask import Response, json
+
+    root_str = str(LIBRARY_DIR)
+    tracks = []
+    audio_exts = {".mp3", ".flac", ".ogg", ".opus", ".m4a", ".aac", ".wav", ".aiff"}
+
+    for dirpath, dirnames, filenames in os.walk(root_str):
+        # Skip hidden dirs and __pycache__
+        dirnames[:] = [d for d in dirnames if not d.startswith(".") and d != "__pycache__"]
+
+        # Try find cover.jpg in this directory
+        cover = None
+        cover_path = os.path.join(dirpath, "cover.jpg")
+        if os.path.exists(cover_path):
+            rel = os.path.relpath(dirpath, root_str)
+            cover = f"/api/stream/{rel}/cover.jpg"
+
+        for fname in sorted(filenames):
+            if fname == "library.db":
+                continue
+
+            ext = os.path.splitext(fname)[1].lower()
+            if ext not in audio_exts:
+                continue
+
+            full = os.path.join(dirpath, fname)
+            rel_path = os.path.relpath(full, root_str)
+
+            # Parse artist/album path structure
+            parts = rel_path.split(os.sep)
+            artist = parts[0] if len(parts) >= 1 else "Unknown Artist"
+            album = parts[1] if len(parts) >= 2 else "Unknown Album"
+            title = os.path.splitext(fname)[0]
+
+            tracks.append({
+                "url": f"/api/stream/{rel_path}",
+                "artist": artist,
+                "album": album,
+                "title": title,
+                "cover": cover,
+                "duration": 0
+            })
+
+    return Response(json.dumps(tracks), mimetype="application/json")
+
+
+@app.route("/api/stream/<path:subpath>")
+def api_stream(subpath):
+    import os
+    import mimetypes
+    from flask import Response
+
+    root_str = str(LIBRARY_DIR)
+    
+    # Split into directory and filename
+    dir_part = os.path.dirname(subpath)
+    file_part = os.path.basename(subpath)
+    
+    dir_str = os.path.join(root_str, dir_part) if dir_part else root_str
+    
+    # Security check
+    if not os.path.realpath(dir_str).startswith(os.path.realpath(root_str)):
+        return "Forbidden", 403
+    
+    # NFS: listdir to find actual filename (Beets may rename, e.g. "01 - Title.opus")
+    try:
+        entries = os.listdir(dir_str)
+    except (FileNotFoundError, PermissionError):
+        return "Not found", 404
+    
+    # Find matching file
+    actual_file = None
+    for entry in entries:
+        if entry == file_part:
+            actual_file = entry
+            break
+        # Fuzzy match: strip numbering prefix and compare
+        # e.g. "01 - War Pigs.opus" matches "01 War Pigs.opus"
+        if os.path.splitext(entry)[0].replace(" - ", " ") == os.path.splitext(file_part)[0].replace(" - ", " "):
+            actual_file = entry
+            break
+    
+    if not actual_file:
+        return "Not found", 404
+    
+    target = os.path.join(dir_str, actual_file)
+    
+    try:
+        fh = open(target, "rb")
+    except (FileNotFoundError, IsADirectoryError):
+        return "Not found", 404
+    
+    def generate():
+        with fh:
+            while True:
+                chunk = fh.read(8192)
+                if not chunk:
+                    break
+                yield chunk
+    
+    mime = mimetypes.guess_type(target)[0] or "application/octet-stream"
+    resp = Response(generate(), mimetype=mime)
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    return resp
+
+
+@app.route("/player")
+def player():
+    album = request.args.get("album", "")
+    artist = request.args.get("artist", "")
+    return render_template("player.html", album=album, artist=artist)
+
+
 # ── Background Download Runner ─────────────────────────────────
 _PROGRESS_RE = re.compile(r"(\d+)/(\d+)")
 

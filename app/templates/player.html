@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% block title %}riptide player{% endblock %}
+{% block content %}
+<div style="text-align: center; margin-bottom: 1em;">
+  <a href="/library" class="btn btn-sm" style="background: var(--bg-card); color: var(--fg);">&larr; Library</a>
+  <span id="now-playing" style="margin-left: 1em; color: var(--fg-dim);"></span>
+</div>
+<div id="app"></div>
+<style>
+body {
+  overflow: hidden;
+}
+#app {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+</style>
+<script type="module">
+  import Webamp from "https://unpkg.com/webamp@^2";
+
+  const filterAlbum = "{{ album }}";
+  const filterArtist = "{{ artist }}";
+  const resp = await fetch("/api/library");
+  const allTracks = await resp.json();
+
+  let tracks = allTracks;
+  if (filterAlbum) tracks = allTracks.filter(t => t.album === filterAlbum);
+  if (filterArtist) tracks = tracks.filter(t => t.artist === filterArtist);
+  if (tracks.length === 0 && filterAlbum) tracks = allTracks;
+
+  const webamp = new Webamp({
+    initialTracks: tracks.map(t => ({
+      url: t.url,
+      metaData: {
+        artist: t.artist,
+        title: t.title,
+        album: t.album
+      }
+    })),
+    __initialWindowLayout: {
+      main: { position: [0, 0] }
+    }
+  });
+
+  if (Webamp.browserIsSupported()) {
+    await webamp.renderWhenReady(document.getElementById("app"));
+    webamp.on("trackChange", () => {
+      const track = webamp.getNowPlaying();
+      document.getElementById("now-playing").textContent = `${track.artist} - ${track.title} (${track.album})`;
+    });
+  } else {
+    document.getElementById("app").innerHTML = "<p style='color: #f44; padding: 2em;'>Webamp requires modern browser (Chrome, Firefox, Edge).</p>";
+  }
+</script>
+{% endblock %}

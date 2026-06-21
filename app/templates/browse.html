@@ -15,12 +15,11 @@
   {% endfor %}
 </nav>
 
-{% if items %}
-  {% set dirs = items | selectattr('is_dir') | list %}
-  {% set files = items | rejectattr('is_dir') | list %}
+{% set dirs = items | selectattr('is_dir') | list %}
+{% set files = items | rejectattr('is_dir') | list %}
 
-  <!-- View Toggle (only show when dirs exist) -->
-  {% if dirs %}
+{% if dirs or files %}
+  <!-- Header: Title + Controls -->
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5em;">
     <h1 style="margin: 0;">
       {% if breadcrumbs %}
@@ -29,11 +28,20 @@
         {{ label }}
       {% endif %}
     </h1>
-    <div id="view-toggle" style="display: flex; gap: 0.3em; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 0.2em;">
-      <button id="btn-list" onclick="setView('list')" class="view-btn active" title="List view">☰</button>
-      <button id="btn-grid" onclick="setView('grid')" class="view-btn" title="Grid view">▦</button>
+    <div style="display: flex; gap: 0.5em; align-items: center;">
+      {% if files %}
+        {% set album_name = breadcrumbs[-1].name if breadcrumbs else '' %}
+        <a href="/player?album={{ album_name }}" class="btn btn-sm" style="text-decoration: none;">&#9654; Winamp</a>
+      {% endif %}
+      {% if dirs %}
+      <div id="view-toggle" style="display: flex; gap: 0.3em; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 0.2em;">
+        <button id="btn-list" onclick="setView('list')" class="view-btn active" title="List view">&#9776;</button>
+        <button id="btn-grid" onclick="setView('grid')" class="view-btn" title="Grid view">&#9638;</button>
+      </div>
+      {% endif %}
     </div>
   </div>
+
   <style>
     .view-btn {
       background: transparent;
@@ -50,13 +58,11 @@
     #view-grid { display: none; }
     #view-grid.active { display: grid; }
     #view-list { display: block; }
-    #view-list.active { display: block; }
     #view-list.hidden { display: none; }
   </style>
-  {% endif %}
 
   <!-- List View (default) -->
-  <div id="view-list" class="{% if not dirs %}active{% else %}active{% endif %}">
+  <div id="view-list" class="active">
     {% if dirs %}
     <table>
       <tr><th></th><th>Name</th></tr>
@@ -83,7 +89,7 @@
       {% for item in files %}
         {% if not item.name.lower().endswith(('.jpg', '.png', '.txt', '.log', '.xml', '.json')) %}
         <tr>
-          <td style="width: 32px; text-align: center; color: var(--fg-dim);">♪</td>
+          <td style="width: 32px; text-align: center; color: var(--fg-dim);">&#9835;</td>
           <td>
             <a href="/{{ route_base }}/{{ item.path }}" target="_blank">{{ item.name }}</a>
           </td>
@@ -98,7 +104,7 @@
           </td>
           <td style="text-align: right; width: 220px;">
             <audio controls preload="none" style="height: 30px; width: 200px;">
-              <source src="/{{ route_base }}/{{ item.path }}" type="audio/opus">
+              <source src="/api/stream/{{ item.path }}" type="audio/opus">
             </audio>
           </td>
         </tr>
@@ -150,14 +156,12 @@ function setView(mode) {
     localStorage.setItem('riptide-view', 'grid');
   } else {
     list.classList.remove('hidden');
-    list.classList.add('active');
     grid.classList.remove('active');
     btnList.classList.add('active');
     btnGrid.classList.remove('active');
     localStorage.setItem('riptide-view', 'list');
   }
 }
-// Restore saved view preference
 (function() {
   var saved = localStorage.getItem('riptide-view');
   if (saved) setView(saved);
